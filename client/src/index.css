@@ -1,0 +1,11 @@
+@import "tailwindcss";
+
+:root {
+  --color-primary: #000000;
+  --color-secondary: #1a1a1a;
+  --color-accent: #3b82f6; /* Electric Blue */
+}
+
+body {
+  @apply bg-gray-50 text-gray-900 font-sans antialiased;
+}
