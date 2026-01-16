@@ -21,9 +21,11 @@ console.log("Tentative de chargement des routes...");
 try {
     const carRoutes = require('./routes/carRoutes');
     const messageRoutes = require('./routes/messageRoutes');
+    const bookingRoutes = require('./routes/bookingRoutes');
     app.use('/api/cars', carRoutes);
     app.use('/api/messages', messageRoutes);
-    console.log("Routes Cars & Messages chargées avec succès !");
+    app.use('/api/bookings', bookingRoutes);
+    console.log("Routes Cars, Messages & Bookings chargées avec succès !");
 } catch (error) {
     console.error("ERREUR FATALE CHARGEMENT ROUTES CARS:", error);
 }

@@ -19,12 +19,22 @@ const Booking = sequelize.define('Booking', {
         type: DataTypes.DECIMAL(10, 2),
         allowNull: false
     },
+    customer_name: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    customer_email: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        validate: { isEmail: true }
+    },
     status: {
         type: DataTypes.ENUM('pending', 'confirmed', 'completed', 'cancelled'),
         defaultValue: 'pending'
     }
 }, {
-    tableName: 'bookings'
+    tableName: 'bookings',
+    timestamps: true
 });
 
 module.exports = Booking;

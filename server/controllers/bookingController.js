@@ -1,32 +1,26 @@
-const { Booking, Car, Availability } = require('../models');
+const { Booking, Car } = require('../models');
 const { Op } = require('sequelize');
 
-exports.createBooking = async (req, res) => {
+// Check availability
+exports.checkAvailability = async (req, res) => {
     try {
-        const { carId, startDate, endDate, userId } = req.body;
+        const { carId, startDate, endDate } = req.query;
 
-        // 1. Check if dates are valid
-        const start = new Date(startDate);
-        const end = new Date(endDate);
-        if (start >= end) {
-            return res.status(400).json({ message: "La date de fin doit être après la date de début." });
+        if (!carId || !startDate || !endDate) {
+            return res.status(400).json({ message: 'Missing parameters' });
         }
 
-        // 2. Check for Overlapping Bookings
-        const existingBooking = await Booking.findOne({
+        // Check if there are overlapping bookings
+        const overlaps = await Booking.findAll({
             where: {
                 carId,
-                status: { [Op.not]: 'cancelled' }, // Ignore cancelled bookings
+                status: { [Op.ne]: 'cancelled' },
                 [Op.or]: [
                     {
-                        start_date: {
-                            [Op.between]: [startDate, endDate]
-                        }
+                        start_date: { [Op.between]: [startDate, endDate] }
                     },
                     {
-                        end_date: {
-                            [Op.between]: [startDate, endDate]
-                        }
+                        end_date: { [Op.between]: [startDate, endDate] }
                     },
                     {
                         [Op.and]: [
@@ -38,48 +32,93 @@ exports.createBooking = async (req, res) => {
             }
         });
 
-        if (existingBooking) {
-            return res.status(409).json({ message: "Cette voiture n'est pas disponible pour ces dates." });
-        }
+        res.json({ available: overlaps.length === 0 });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Error checking availability' });
+    }
+};
 
-        // 3. Check hard availability (Availability table blocks)
-        const availabilityBlock = await Availability.findOne({
+// Create booking
+exports.createBooking = async (req, res) => {
+    try {
+        const { carId, startDate, endDate, customerName, customerEmail, totalPrice } = req.body;
+
+        // Final check before creation
+        const overlaps = await Booking.findAll({
             where: {
                 carId,
+                status: { [Op.ne]: 'cancelled' },
                 [Op.or]: [
                     { start_date: { [Op.between]: [startDate, endDate] } },
-                    { end_date: { [Op.between]: [startDate, endDate] } }
+                    { end_date: { [Op.between]: [startDate, endDate] } },
+                    {
+                        [Op.and]: [
+                            { start_date: { [Op.lte]: startDate } },
+                            { end_date: { [Op.gte]: endDate } }
+                        ]
+                    }
                 ]
             }
         });
 
-        if (availabilityBlock) {
-            return res.status(409).json({ message: "Cette voiture est bloquée (maintenance ou autre) pour ces dates." });
+        if (overlaps.length > 0) {
+            return res.status(400).json({ message: 'Car not available for these dates' });
         }
 
-        // 4. Calculate Price
-        const car = await Car.findByPk(carId);
-        if (!car) return res.status(404).json({ message: "Voiture introuvable." });
-
-        const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
-        const totalPrice = days * car.price_per_day;
-
-        // 5. Create Booking
         const newBooking = await Booking.create({
-            userId, // Assuming passed from auth middleware (req.user.id normally)
             carId,
             start_date: startDate,
             end_date: endDate,
+            customer_name: customerName,
+            customer_email: customerEmail,
             total_price: totalPrice,
             status: 'pending'
         });
 
-        // 6. Update Availability (Optional: if we want to explicitly store blocked dates in Availability table too, but Booking table is usually enough if checked correctly. The user requirement says "Blocage automatique des dates après réservation". The check above covers it. We can also add an entry to Availability if we want to unify availability checks.)
-
-        res.status(201).json({ message: "Réservation créée avec succès", booking: newBooking });
-
+        res.status(201).json(newBooking);
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: "Erreur serveur lors de la réservation." });
+        res.status(500).json({ message: 'Error creating booking' });
+    }
+};
+
+// Get all bookings (Admin)
+exports.getAllBookings = async (req, res) => {
+    try {
+        const bookings = await Booking.findAll({
+            include: [{ model: Car, attributes: ['brand', 'model', 'images'] }],
+            order: [['createdAt', 'DESC']]
+        });
+        res.json(bookings);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Error fetching bookings' });
+    }
+};
+
+// Update booking status
+exports.updateBookingStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+        const booking = await Booking.findByPk(id);
+        if (!booking) return res.status(404).json({ message: 'Booking not found' });
+
+        await booking.update({ status });
+        res.json(booking);
+    } catch (error) {
+        res.status(500).json({ message: 'Error updating booking' });
+    }
+};
+
+// Delete booking
+exports.deleteBooking = async (req, res) => {
+    try {
+        const { id } = req.params;
+        await Booking.destroy({ where: { id } });
+        res.json({ message: 'Booking deleted' });
+    } catch (error) {
+        res.status(500).json({ message: 'Error deleting booking' });
     }
 };
