@@ -18,7 +18,7 @@ const AdminDashboard = () => {
     // Fetch Data
     useEffect(() => {
         fetchCars();
-        // fetchMessages(); // Uncomment when message API is ready
+        fetchMessages();
     }, []);
 
     const fetchCars = async () => {
@@ -29,6 +29,15 @@ const AdminDashboard = () => {
         } catch (error) {
             console.error("Error fetching cars:", error);
             setLoading(false);
+        }
+    };
+
+    const fetchMessages = async () => {
+        try {
+            const res = await axios.get(`${API_URL}/api/messages`);
+            setMessages(res.data);
+        } catch (error) {
+            console.error("Error fetching messages:", error);
         }
     };
 
@@ -65,9 +74,9 @@ const AdminDashboard = () => {
             model: formData.get('model'),
             category: formData.get('category'),
             price_per_day: formData.get('price'),
-            image: '/images/car1.png', // Default or handle file upload to Cloudinary/S3
-            transmission: 'Automatic',
-            fuel: 'Essence'
+            images: JSON.stringify(['/images/car1.png']), // For now defaulting
+            transmission: formData.get('transmission') || 'Automatic',
+            fuel: formData.get('fuel') || 'Essence'
         };
 
         try {
@@ -80,15 +89,27 @@ const AdminDashboard = () => {
         }
     };
 
-    // Messages placeholders (Mock for now until API exists)
-    const handleDeleteMessage = (id) => {
-        setMessages(messages.filter(m => m.id !== id));
+    // Message Handlers
+    const handleDeleteMessage = async (id) => {
+        if (confirm('Supprimer ce message ?')) {
+            try {
+                await axios.delete(`${API_URL}/api/messages/${id}`);
+                setMessages(messages.filter(m => m.id !== id));
+            } catch (error) {
+                console.error("Error deleting message:", error);
+            }
+        }
     };
 
-    const toggleMessageStatus = (id) => {
-        setMessages(messages.map(m =>
-            m.id === id ? { ...m, status: m.status === 'read' ? 'unread' : 'read' } : m
-        ));
+    const toggleMessageStatus = async (id) => {
+        try {
+            const res = await axios.put(`${API_URL}/api/messages/${id}/status`);
+            setMessages(messages.map(m =>
+                m.id === id ? res.data : m
+            ));
+        } catch (error) {
+            console.error("Error toggling message status:", error);
+        }
     };
 
     return (
@@ -109,8 +130,8 @@ const AdminDashboard = () => {
                             key={item.id}
                             onClick={() => setActiveTab(item.id)}
                             className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all group ${activeTab === item.id
-                                    ? 'bg-brand-primary text-white shadow-lg shadow-brand-primary/20'
-                                    : 'text-zinc-400 hover:bg-white/5 hover:text-white'
+                                ? 'bg-brand-primary text-white shadow-lg shadow-brand-primary/20'
+                                : 'text-zinc-400 hover:bg-white/5 hover:text-white'
                                 }`}
                         >
                             <div className="flex items-center gap-3">
@@ -258,7 +279,49 @@ const AdminDashboard = () => {
                             className="space-y-6"
                         >
                             <h1 className="text-3xl font-black">Messages reçus</h1>
-                            <div className="p-10 text-center text-zinc-500 glass rounded-3xl">Module Messages en cours d'intégration API...</div>
+                            <div className="grid gap-4">
+                                {messages.map((msg) => (
+                                    <div
+                                        key={msg.id}
+                                        className={`glass p-6 rounded-3xl border-white/5 transition-all cursor-pointer ${msg.status === 'unread' ? 'border-l-4 border-l-brand-primary bg-brand-primary/5' : 'opacity-80'
+                                            }`}
+                                        onClick={() => toggleMessageStatus(msg.id)}
+                                    >
+                                        <div className="flex justify-between items-start mb-2">
+                                            <div className="flex gap-4 items-center">
+                                                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ${msg.status === 'unread' ? 'bg-brand-primary text-white' : 'bg-white/10 text-zinc-500'
+                                                    }`}>
+                                                    {(msg.name || 'U').charAt(0)}
+                                                </div>
+                                                <div>
+                                                    <h4 className={`font-bold ${msg.status === 'unread' ? 'text-white' : 'text-zinc-400'}`}>
+                                                        {msg.name}
+                                                    </h4>
+                                                    <p className="text-zinc-500 text-xs">{msg.email}</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-xs text-zinc-600 font-bold uppercase tracking-wider">
+                                                    {new Date(msg.createdAt).toLocaleDateString()}
+                                                </span>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); handleDeleteMessage(msg.id); }}
+                                                    className="text-zinc-600 hover:text-red-500 transition-colors"
+                                                >
+                                                    <XCircle size={18} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div className="ml-14">
+                                            <h5 className="font-bold text-sm mb-1">{msg.subject}</h5>
+                                            <p className="text-zinc-400 text-sm leading-relaxed">{msg.message}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                                {messages.length === 0 && (
+                                    <div className="p-10 text-center text-zinc-500 glass rounded-3xl">Aucun message pour le moment.</div>
+                                )}
+                            </div>
                         </motion.div>
                     )}
                 </AnimatePresence>
@@ -291,6 +354,18 @@ const AdminDashboard = () => {
                                     <option value="SUV">SUV</option>
                                 </select>
                                 <input name="price" type="number" placeholder="Prix / Jour" required className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-brand-primary w-full" />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <select name="transmission" className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-brand-primary w-full text-zinc-400">
+                                    <option value="Automatic">Automatique</option>
+                                    <option value="Manual">Manuelle</option>
+                                </select>
+                                <select name="fuel" className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-brand-primary w-full text-zinc-400">
+                                    <option value="Essence">Essence</option>
+                                    <option value="Diesel">Diesel</option>
+                                    <option value="Electric">Électrique</option>
+                                    <option value="Hybrid">Hybride</option>
+                                </select>
                             </div>
 
                             {/* Image Upload Area */}

@@ -1,0 +1,4 @@
+const { DataTypes } = require('sequelize');
+const sequelize = require('../config/database'); // Assuming database config is here, wait, index.js usually inits sequelize. Let's check how other models do it.
+// Actually in this project, it seems models are defined using `sequelize.define` often passed or required. 
+// Let's check `User.js` to see the pattern.

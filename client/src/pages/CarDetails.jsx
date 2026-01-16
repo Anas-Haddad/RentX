@@ -1,18 +1,23 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { CheckCircle, Shield, Zap, Wind, ArrowLeft, Calendar } from 'lucide-react';
 
+import axios from 'axios';
+import API_URL from '../config';
+
 const CarDetails = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const [car, setCar] = useState(null);
+    const [loading, setLoading] = useState(true);
 
     // Fake data for the demo
-    const car = {
+    const MOCK_CAR = {
         id: 1,
         brand: 'Audi',
         model: 'RS6 Avant',
-        price: 550,
+        price_per_day: 550,
         category: 'Sport',
         transmission: 'Auto',
         fuel: 'Essence',
@@ -23,7 +28,31 @@ const CarDetails = () => {
         description: "L'Audi RS6 Avant n'est pas qu'un break, c'est une icône de puissance. Avec son moteur V8 bi-turbo, elle offre des performances de supercar tout en conservant un confort et une polyvalence exceptionnels."
     };
 
+    useEffect(() => {
+        const fetchCar = async () => {
+            try {
+                const res = await axios.get(`${API_URL}/api/cars/${id}`);
+                const data = res.data;
+                setCar({
+                    ...data,
+                    price: data.price_per_day,
+                    image: data.image || (data.images ? JSON.parse(data.images)[0] : '/images/car1.png'),
+                    hp: 600, acceleration: '3.6s', topSpeed: '250km/h' // Placeholder for specs not in DB
+                });
+            } catch (error) {
+                console.warn("Using mock car detail:", error);
+                setCar(MOCK_CAR);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchCar();
+    }, [id]);
+
     const features = ["Assurance Tous Risques", "Kilométrage Illimité", "Assistance 24/7", "Livraison Standard"];
+
+    if (loading) return <div className="min-h-screen pt-40 text-center">Chargement...</div>;
+    if (!car) return <div className="min-h-screen pt-40 text-center">Voiture non trouvée.</div>;
 
     return (
         <div className="bg-transparent min-h-screen pt-32 text-white">

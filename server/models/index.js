@@ -4,6 +4,7 @@ const Car = require('./Car');
 const Booking = require('./Booking');
 const Availability = require('./Availability');
 const Role = require('./Role');
+const Message = require('./Message');
 
 // Associations
 
@@ -28,5 +29,6 @@ module.exports = {
     Car,
     Booking,
     Availability,
-    Role
+    Role,
+    Message
 };

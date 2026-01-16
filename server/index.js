@@ -20,8 +20,10 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 console.log("Tentative de chargement des routes...");
 try {
     const carRoutes = require('./routes/carRoutes');
+    const messageRoutes = require('./routes/messageRoutes');
     app.use('/api/cars', carRoutes);
-    console.log("Routes Cars chargées avec succès !");
+    app.use('/api/messages', messageRoutes);
+    console.log("Routes Cars & Messages chargées avec succès !");
 } catch (error) {
     console.error("ERREUR FATALE CHARGEMENT ROUTES CARS:", error);
 }

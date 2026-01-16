@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { SlidersHorizontal, Search as SearchIcon } from 'lucide-react';
 import CarCard from '../components/ui/CarCard';
