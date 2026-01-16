@@ -50,9 +50,10 @@ const startServer = async () => {
             await sequelize.sync({ alter: true });
             console.log('Models synced.');
         } else {
-            // In prod, maybe just create if not exists, or skip if you use migrations
-            // For now, let's just do a safe sync (no alter) to be sure tables exist
-            await sequelize.sync();
+            // Force alter: true temporarily to add missing columns in Production
+            console.log('Syncing models with alter in production...');
+            await sequelize.sync({ alter: true });
+            console.log('Production Models synced.');
         }
 
         app.listen(PORT, '0.0.0.0', () => {
