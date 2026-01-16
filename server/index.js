@@ -16,9 +16,9 @@ app.use(express.json());
 app.use(morgan('dev'));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Routes (to be imported)
+// Routes
 // app.use('/api/auth', require('./routes/authRoutes'));
-// app.use('/api/cars', require('./routes/carRoutes'));
+app.use('/api/cars', require('./routes/carRoutes'));
 // app.use('/api/bookings', require('./routes/bookingRoutes'));
 
 app.get('/', (req, res) => {
