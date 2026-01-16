@@ -21,9 +21,7 @@ const Reservation = () => {
         endDate: ''
     });
 
-    const [isAvailable, setIsAvailable] = useState(null);
     const [busyDates, setBusyDates] = useState([]);
-    const [checking, setChecking] = useState(false);
     const [showSummary, setShowSummary] = useState(false);
     const [status, setStatus] = useState(null); // 'success', 'error', 'loading'
 
@@ -62,30 +60,6 @@ const Reservation = () => {
             fetchBusyDates();
         }
     }, [car]);
-
-    // Check availability only if dates are selected manually (redundant but safe)
-    useEffect(() => {
-        const checkDates = async () => {
-            if (formData.startDate && formData.endDate && car) {
-                setChecking(true);
-                try {
-                    const res = await axios.get(`${API_URL}/api/bookings/check`, {
-                        params: {
-                            carId: car.id,
-                            startDate: formData.startDate,
-                            endDate: formData.endDate
-                        }
-                    });
-                    setIsAvailable(res.data.available);
-                } catch (e) {
-                    setIsAvailable(false);
-                } finally {
-                    setChecking(false);
-                }
-            }
-        };
-        checkDates();
-    }, [formData.startDate, formData.endDate, car]);
 
     const calculateTotal = () => {
         if (!formData.startDate || !formData.endDate || !car) return 0;
@@ -192,72 +166,63 @@ const Reservation = () => {
                                 </div>
                             </div>
 
-                            <div className="mt-8 flex items-center gap-4 p-4 rounded-2xl bg-white/5 border border-white/5">
-                                {checking ? (
-                                    <span className="text-xs font-bold text-zinc-500">Vérification de la disponibilité...</span>
-                                ) : isAvailable === true ? (
-                                    <div className="flex items-center gap-2 text-green-500 text-xs font-bold uppercase"><CheckCircle size={16} /> Véhicule disponible pour ces dates</div>
-                                ) : isAvailable === false ? (
-                                    <div className="flex items-center gap-2 text-red-500 text-xs font-bold uppercase"><AlertCircle size={16} /> Désolé, véhicule déjà réservé ou indisponible</div>
-                                ) : (
-                                    <div className="text-xs font-bold text-zinc-600 flex items-center gap-2"><Info size={16} /> Sélectionnez vos dates pour vérifier</div>
-                                )}
-                            </div>
                         </div>
+                    </div>
 
                         {/* Summary & Final Button */}
-                        <button
-                            disabled={!isAvailable || !formData.name || !formData.email || checking}
-                            onClick={() => setShowSummary(true)}
-                            className="w-full bg-white text-black font-black uppercase tracking-widest py-6 rounded-[2.5rem] hover:bg-brand-primary hover:text-white transition-all shadow-2xl active:scale-95 flex justify-center items-center gap-4 text-lg disabled:opacity-30 disabled:cursor-not-allowed"
-                        >
-                            Récapitulatif & Paiement <ChevronRight />
-                        </button>
-                    </div>
-                )}
-            </section>
-
-            {/* Confirmation Box (Modal) */}
-            <AnimatePresence>
-                {showSummary && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
-                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bg-[#0a0a0a] glass border border-white/10 w-full max-w-xl p-10 rounded-[3rem] shadow-2xl">
-                            <h2 className="text-3xl font-black mb-8 uppercase tracking-tighter">Vérification de Réservation</h2>
-
-                            <div className="space-y-6 mb-10">
-                                <div className="flex justify-between border-b border-white/5 pb-4">
-                                    <span className="text-zinc-500 uppercase font-bold text-[10px]">Véhicule</span>
-                                    <span className="font-bold text-lg">{car.brand} {car.model}</span>
-                                </div>
-                                <div className="flex justify-between border-b border-white/5 pb-4">
-                                    <span className="text-zinc-500 uppercase font-bold text-[10px]">Client</span>
-                                    <span className="font-bold">{formData.name}</span>
-                                </div>
-                                <div className="flex justify-between border-b border-white/5 pb-4">
-                                    <span className="text-zinc-500 uppercase font-bold text-[10px]">Période</span>
-                                    <div className="text-right">
-                                        <div className="font-bold">{formData.startDate} au {formData.endDate}</div>
-                                        <div className="text-xs text-brand-primary font-bold">{calculateTotal() / (car.price || car.price_per_day)} nuits</div>
-                                    </div>
-                                </div>
-                                <div className="flex justify-between pt-4 bg-brand-primary/10 p-6 rounded-2xl border border-brand-primary/20">
-                                    <span className="text-white uppercase font-black text-xs tracking-widest">Total à régler</span>
-                                    <span className="text-3xl font-black text-brand-primary">{calculateTotal()} TND</span>
-                                </div>
-                            </div>
-
-                            <div className="flex gap-4">
-                                <button onClick={() => setShowSummary(false)} className="flex-1 border border-white/10 py-5 rounded-2xl font-bold hover:bg-white/5 uppercase text-xs tracking-widest transition-colors">Modifier</button>
-                                <button onClick={handleConfirm} disabled={status === 'loading'} className="flex-2 bg-white text-black py-5 px-10 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-brand-primary hover:text-white transition-all">
-                                    {status === 'loading' ? 'Validation...' : 'Confirmer & Réserver'}
-                                </button>
-                            </div>
-                            {status === 'error' && <p className="text-red-500 text-center text-[10px] mt-4 font-bold">Erreur système. Veuillez réessayer.</p>}
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
+                <button
+                    disabled={!formData.startDate || !formData.endDate || !formData.name || !formData.email}
+                    onClick={() => setShowSummary(true)}
+                    className="w-full bg-white text-black font-black uppercase tracking-widest py-6 rounded-[2.5rem] hover:bg-brand-primary hover:text-white transition-all shadow-2xl active:scale-95 flex justify-center items-center gap-4 text-lg disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                    Récapitulatif & Paiement <ChevronRight />
+                </button>
         </div>
+    )
+}
+            </section >
+
+    {/* Confirmation Box (Modal) */ }
+    < AnimatePresence >
+    { showSummary && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bg-[#0a0a0a] glass border border-white/10 w-full max-w-xl p-10 rounded-[3rem] shadow-2xl">
+                <h2 className="text-3xl font-black mb-8 uppercase tracking-tighter">Vérification de Réservation</h2>
+
+                <div className="space-y-6 mb-10">
+                    <div className="flex justify-between border-b border-white/5 pb-4">
+                        <span className="text-zinc-500 uppercase font-bold text-[10px]">Véhicule</span>
+                        <span className="font-bold text-lg">{car.brand} {car.model}</span>
+                    </div>
+                    <div className="flex justify-between border-b border-white/5 pb-4">
+                        <span className="text-zinc-500 uppercase font-bold text-[10px]">Client</span>
+                        <span className="font-bold">{formData.name}</span>
+                    </div>
+                    <div className="flex justify-between border-b border-white/5 pb-4">
+                        <span className="text-zinc-500 uppercase font-bold text-[10px]">Période</span>
+                        <div className="text-right">
+                            <div className="font-bold">{formData.startDate} au {formData.endDate}</div>
+                            <div className="text-xs text-brand-primary font-bold">{calculateTotal() / (car.price || car.price_per_day)} nuits</div>
+                        </div>
+                    </div>
+                    <div className="flex justify-between pt-4 bg-brand-primary/10 p-6 rounded-2xl border border-brand-primary/20">
+                        <span className="text-white uppercase font-black text-xs tracking-widest">Total à régler</span>
+                        <span className="text-3xl font-black text-brand-primary">{calculateTotal()} TND</span>
+                    </div>
+                </div>
+
+                <div className="flex gap-4">
+                    <button onClick={() => setShowSummary(false)} className="flex-1 border border-white/10 py-5 rounded-2xl font-bold hover:bg-white/5 uppercase text-xs tracking-widest transition-colors">Modifier</button>
+                    <button onClick={handleConfirm} disabled={status === 'loading'} className="flex-2 bg-white text-black py-5 px-10 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-brand-primary hover:text-white transition-all">
+                        {status === 'loading' ? 'Validation...' : 'Confirmer & Réserver'}
+                    </button>
+                </div>
+                {status === 'error' && <p className="text-red-500 text-center text-[10px] mt-4 font-bold">Erreur système. Veuillez réessayer.</p>}
+            </motion.div>
+        </div>
+    )}
+            </AnimatePresence >
+        </div >
     );
 };
 
