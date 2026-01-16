@@ -33,6 +33,7 @@ async function seed() {
             console.log(`Added: ${car.brand} ${car.model}`);
         } catch (error) {
             console.error(`Failed to add ${car.brand}:`, error.message);
+            if (error.response) console.error("Server Response:", error.response.data);
         }
     }
     console.log('Seeding complete!');

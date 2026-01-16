@@ -17,12 +17,19 @@ app.use(morgan('dev'));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Routes
+console.log("Tentative de chargement des routes...");
+try {
+    const carRoutes = require('./routes/carRoutes');
+    app.use('/api/cars', carRoutes);
+    console.log("Routes Cars chargées avec succès !");
+} catch (error) {
+    console.error("ERREUR FATALE CHARGEMENT ROUTES CARS:", error);
+}
 // app.use('/api/auth', require('./routes/authRoutes'));
-app.use('/api/cars', require('./routes/carRoutes'));
 // app.use('/api/bookings', require('./routes/bookingRoutes'));
 
 app.get('/', (req, res) => {
-    res.send('RentX API is running');
+    res.send('RentX API V2 is running - Routes Loaded? Check Logs');
 });
 
 // Sync Database and Start Server
