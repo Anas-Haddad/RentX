@@ -17,16 +17,8 @@ exports.checkAvailability = async (req, res) => {
                 status: { [Op.ne]: 'cancelled' },
                 [Op.or]: [
                     {
-                        start_date: { [Op.between]: [startDate, endDate] }
-                    },
-                    {
-                        end_date: { [Op.between]: [startDate, endDate] }
-                    },
-                    {
-                        [Op.and]: [
-                            { start_date: { [Op.lte]: startDate } },
-                            { end_date: { [Op.gte]: endDate } }
-                        ]
+                        start_date: { [Op.lt]: endDate },
+                        end_date: { [Op.gt]: startDate }
                     }
                 ]
             }
@@ -70,13 +62,9 @@ exports.createBooking = async (req, res) => {
                 carId,
                 status: { [Op.ne]: 'cancelled' },
                 [Op.or]: [
-                    { start_date: { [Op.between]: [startDate, endDate] } },
-                    { end_date: { [Op.between]: [startDate, endDate] } },
                     {
-                        [Op.and]: [
-                            { start_date: { [Op.lte]: startDate } },
-                            { end_date: { [Op.gte]: endDate } }
-                        ]
+                        start_date: { [Op.lt]: endDate },
+                        end_date: { [Op.gt]: startDate }
                     }
                 ]
             }

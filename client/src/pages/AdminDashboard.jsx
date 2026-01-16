@@ -56,8 +56,8 @@ const AdminDashboard = () => {
     const stats = [
         { title: 'Total Voitures', value: cars.length, icon: <Car />, color: 'text-blue-500', bg: 'bg-blue-500/10' },
         { title: 'Messages', value: messages.length, icon: <MessageSquare />, color: 'text-green-500', bg: 'bg-green-500/10' },
-        { title: 'Réservations', value: bookings.length, icon: <Calendar />, color: 'text-purple-500', bg: 'bg-purple-500/10' },
-        { title: 'Revenus', value: bookings.filter(b => b.status === 'confirmed').reduce((acc, b) => acc + parseFloat(b.total_price), 0).toFixed(1) + ' TND', icon: <TrendingUp />, color: 'text-yellow-500', bg: 'bg-yellow-500/10' },
+        { title: 'À Valider', value: bookings.filter(b => b.status === 'pending').length, icon: <Calendar />, color: 'text-purple-500', bg: 'bg-purple-500/10' },
+        { title: 'Revenus', value: bookings.filter(b => b.status === 'confirmed').reduce((acc, b) => acc + parseFloat(b.total_price), 0).toFixed(0) + ' TND', icon: <TrendingUp />, color: 'text-yellow-500', bg: 'bg-yellow-500/10' },
     ];
 
     // Handlers
