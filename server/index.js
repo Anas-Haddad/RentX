@@ -35,18 +35,28 @@ app.get('/', (req, res) => {
 // Sync Database and Start Server
 const startServer = async () => {
     try {
+        console.log('Tentative de connexion à la BDD...');
         await sequelize.authenticate();
-        console.log('Database connected...');
+        console.log('Database connected successfully.');
 
-        // Sync models (force: false means it won't drop tables every time)
-        // In development, might use true or alter: true if schemas change
-        await sequelize.sync({ alter: true });
+        // On production, avoid sync({alter: true}) on every startup to prevent timeouts
+        // Only run it if explicitly needed or in dev
+        if (process.env.NODE_ENV !== 'production') {
+            console.log('Syncing models...');
+            await sequelize.sync({ alter: true });
+            console.log('Models synced.');
+        } else {
+            // In prod, maybe just create if not exists, or skip if you use migrations
+            // For now, let's just do a safe sync (no alter) to be sure tables exist
+            await sequelize.sync();
+        }
 
-        app.listen(PORT, () => {
+        app.listen(PORT, '0.0.0.0', () => {
             console.log(`Server running on port ${PORT}`);
         });
     } catch (error) {
-        console.error('Unable to connect to the database:', error);
+        console.error('CRITICAL DATABASE ERROR:', error);
+        // Do not exit process, let Render restart it or see the log
     }
 };
 
