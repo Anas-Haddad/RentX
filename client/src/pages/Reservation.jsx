@@ -4,6 +4,8 @@ import { Calendar, User, CreditCard, ChevronRight, CheckCircle, AlertCircle, Inf
 import { useLocation, useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import API_URL from '../config';
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 const Reservation = () => {
     const { id } = useParams();
@@ -20,6 +22,7 @@ const Reservation = () => {
     });
 
     const [isAvailable, setIsAvailable] = useState(null);
+    const [busyDates, setBusyDates] = useState([]);
     const [checking, setChecking] = useState(false);
     const [showSummary, setShowSummary] = useState(false);
     const [status, setStatus] = useState(null); // 'success', 'error', 'loading'
@@ -38,7 +41,29 @@ const Reservation = () => {
         }
     }, [id, car]);
 
-    // Check availability when dates change
+    // Fetch Busy Dates
+    useEffect(() => {
+        if (car) {
+            const fetchBusyDates = async () => {
+                try {
+                    const res = await axios.get(`${API_URL}/api/bookings/busy-dates`, {
+                        params: { carId: car.id }
+                    });
+                    // Convert "YYYY-MM-DD" back to Date objects for react-datepicker
+                    const intervals = res.data.map(b => ({
+                        start: new Date(b.start_date),
+                        end: new Date(b.end_date)
+                    }));
+                    setBusyDates(intervals);
+                } catch (e) {
+                    console.error("Error fetching busy dates");
+                }
+            };
+            fetchBusyDates();
+        }
+    }, [car]);
+
+    // Check availability only if dates are selected manually (redundant but safe)
     useEffect(() => {
         const checkDates = async () => {
             if (formData.startDate && formData.endDate && car) {
@@ -137,13 +162,33 @@ const Reservation = () => {
                                 <h3 className="text-2xl font-black uppercase tracking-tight">Dates souhaitées</h3>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 uppercase text-[10px] font-black tracking-widest text-zinc-500">
-                                <div className="space-y-2">
+                                <div className="space-y-4">
                                     <label className="ml-4">Départ</label>
-                                    <input type="date" value={formData.startDate} onChange={e => setFormData({ ...formData, startDate: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 outline-none focus:border-brand-primary transition-colors text-white invert" />
+                                    <DatePicker
+                                        selected={formData.startDate ? new Date(formData.startDate) : null}
+                                        onChange={(date) => setFormData({ ...formData, startDate: date.toISOString().split('T')[0] })}
+                                        selectsStart
+                                        startDate={formData.startDate ? new Date(formData.startDate) : null}
+                                        endDate={formData.endDate ? new Date(formData.endDate) : null}
+                                        minDate={new Date()}
+                                        excludeDateIntervals={busyDates}
+                                        placeholderText="Sélectionner"
+                                        className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 outline-none focus:border-brand-primary transition-colors text-white"
+                                    />
                                 </div>
-                                <div className="space-y-2">
+                                <div className="space-y-4">
                                     <label className="ml-4">Retour</label>
-                                    <input type="date" value={formData.endDate} onChange={e => setFormData({ ...formData, endDate: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 outline-none focus:border-brand-primary transition-colors text-white invert" />
+                                    <DatePicker
+                                        selected={formData.endDate ? new Date(formData.endDate) : null}
+                                        onChange={(date) => setFormData({ ...formData, endDate: date.toISOString().split('T')[0] })}
+                                        selectsEnd
+                                        startDate={formData.startDate ? new Date(formData.startDate) : null}
+                                        endDate={formData.endDate ? new Date(formData.endDate) : null}
+                                        minDate={formData.startDate ? new Date(formData.startDate) : new Date()}
+                                        excludeDateIntervals={busyDates}
+                                        placeholderText="Sélectionner"
+                                        className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 outline-none focus:border-brand-primary transition-colors text-white"
+                                    />
                                 </div>
                             </div>
 

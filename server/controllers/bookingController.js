@@ -39,6 +39,26 @@ exports.checkAvailability = async (req, res) => {
     }
 };
 
+// Get busy dates for a car
+exports.getBusyDates = async (req, res) => {
+    try {
+        const { carId } = req.query;
+        if (!carId) return res.status(400).json({ message: 'Car ID required' });
+
+        const bookings = await Booking.findAll({
+            where: {
+                carId,
+                status: { [Op.ne]: 'cancelled' }
+            },
+            attributes: ['start_date', 'end_date']
+        });
+
+        res.json(bookings);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching busy dates' });
+    }
+};
+
 // Create booking
 exports.createBooking = async (req, res) => {
     try {
