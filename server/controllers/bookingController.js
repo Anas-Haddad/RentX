@@ -146,8 +146,23 @@ exports.deleteBooking = async (req, res) => {
 // Get personal bookings (User)
 exports.getMyBookings = async (req, res) => {
     try {
+        // Find user to get their email (for fallback)
+        let userEmail = '';
+        if (req.user.role === 'admin') {
+            const admin = await Admin.findByPk(req.user.id);
+            userEmail = admin?.email;
+        } else {
+            const user = await User.findByPk(req.user.id);
+            userEmail = user?.email;
+        }
+
         const bookings = await Booking.findAll({
-            where: { userId: req.user.id },
+            where: {
+                [Op.or]: [
+                    { userId: req.user.id },
+                    { customer_email: userEmail }
+                ]
+            },
             include: [{ model: Car, attributes: ['brand', 'model', 'image', 'images'] }],
             order: [['createdAt', 'DESC']]
         });
