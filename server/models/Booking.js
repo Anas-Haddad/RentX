@@ -35,6 +35,14 @@ const Booking = sequelize.define('Booking', {
     status: {
         type: DataTypes.ENUM('pending', 'confirmed', 'completed', 'cancelled'),
         defaultValue: 'pending'
+    },
+    userId: {
+        type: DataTypes.INTEGER,
+        allowNull: true
+    },
+    carId: {
+        type: DataTypes.INTEGER,
+        allowNull: false
     }
 }, {
     tableName: 'bookings',

@@ -147,11 +147,8 @@ exports.deleteBooking = async (req, res) => {
 exports.getMyBookings = async (req, res) => {
     try {
         let userEmail = '';
-
-        // Match by ID is the primary way
         const searchConditions = [{ userId: req.user.id }];
 
-        // Get email for fallback (matching even if userId is missing or wrong)
         if (req.user.role === 'admin') {
             const admin = await Admin.findByPk(req.user.id);
             if (admin) userEmail = admin.email;
@@ -161,8 +158,13 @@ exports.getMyBookings = async (req, res) => {
         }
 
         if (userEmail) {
+            // Add email match in case userId is missing (e.g. guest booking or account migration)
             searchConditions.push({ customer_email: userEmail });
         }
+
+        console.log('--- FETCHING MY BOOKINGS ---');
+        console.log('User ID:', req.user.id);
+        console.log('User Email:', userEmail);
 
         const bookings = await Booking.findAll({
             where: {
