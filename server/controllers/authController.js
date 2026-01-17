@@ -38,6 +38,7 @@ exports.register = async (req, res) => {
                 id: user.id,
                 name: user.name,
                 email: user.email,
+                phone: user.phone,
                 role: 'user',
                 token: generateToken(user.id)
             });
@@ -78,6 +79,7 @@ exports.login = async (req, res) => {
                     id: user.id,
                     name: user.name,
                     email: user.email,
+                    phone: user.phone,
                     role: 'user',
                     token: generateToken(user.id)
                 });
