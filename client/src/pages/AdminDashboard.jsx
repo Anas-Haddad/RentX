@@ -13,7 +13,8 @@ const AdminDashboard = () => {
     const [cars, setCars] = useState([]);
     const [messages, setMessages] = useState([]);
     const [bookings, setBookings] = useState([]);
-    const [showAddCarModal, setShowAddCarModal] = useState(false);
+    const [showCarModal, setShowCarModal] = useState(false);
+    const [editingCar, setEditingCar] = useState(null);
     const [loading, setLoading] = useState(true);
 
     // Fetch Data
@@ -73,30 +74,41 @@ const AdminDashboard = () => {
         }
     };
 
-    const handleAddCar = async (e) => {
+    const handleEditCar = (car) => {
+        setEditingCar(car);
+        setShowCarModal(true);
+    };
+
+    const handleCarSubmit = async (e) => {
         e.preventDefault();
         const formData = new FormData(e.target);
 
-        // Convert FormData to JSON object for now (Backend expects JSON usually, unless we use multer)
-        // Adjust based on your backend. Here assuming JSON for simplicity or file handling needs mulipart/form-data
-        // For simple demo with image URL or JSON:
         const carData = {
             brand: formData.get('brand'),
             model: formData.get('model'),
             category: formData.get('category'),
             price_per_day: formData.get('price'),
-            images: JSON.stringify(['/images/car1.png']), // For now defaulting
-            transmission: formData.get('transmission') || 'Automatic',
-            fuel: formData.get('fuel') || 'Essence'
+            transmission: formData.get('transmission'),
+            fuel: formData.get('fuel')
         };
 
         try {
-            const res = await axios.post(`${API_URL}/api/cars`, carData);
-            setCars([...cars, res.data]);
-            setShowAddCarModal(false);
+            if (editingCar) {
+                const res = await axios.put(`${API_URL}/api/cars/${editingCar.id}`, carData);
+                setCars(cars.map(c => c.id === editingCar.id ? { ...c, ...res.data } : c));
+                alert("Véhicule mis à jour avec succès !");
+            } else {
+                // For new cars, we'll use a default image if none uploaded for now
+                carData.images = JSON.stringify(['/images/car1.png']);
+                const res = await axios.post(`${API_URL}/api/cars`, carData);
+                setCars([...cars, res.data]);
+                alert("Véhicule ajouté avec succès !");
+            }
+            setShowCarModal(false);
+            setEditingCar(null);
         } catch (error) {
-            console.error("Error adding car:", error);
-            alert("Erreur lors de l'ajout");
+            console.error("Error submitting car:", error);
+            alert("Erreur lors de l'opération");
         }
     };
 
@@ -228,7 +240,10 @@ const AdminDashboard = () => {
                             <div className="flex justify-between items-center">
                                 <h1 className="text-3xl font-black">Gestion de la Flotte</h1>
                                 <button
-                                    onClick={() => setShowAddCarModal(true)}
+                                    onClick={() => {
+                                        setEditingCar(null);
+                                        setShowCarModal(true);
+                                    }}
                                     className="bg-white text-black hover:bg-brand-primary hover:text-white px-6 py-3 rounded-full font-bold flex items-center gap-2 transition-all shadow-lg active:scale-95"
                                 >
                                     <Plus size={20} /> Ajouter un véhicule
@@ -279,7 +294,10 @@ const AdminDashboard = () => {
                                                     </td>
                                                     <td className="p-6">
                                                         <div className="flex justify-end gap-2">
-                                                            <button className="p-2 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-white transition-colors">
+                                                            <button
+                                                                onClick={() => handleEditCar(car)}
+                                                                className="p-2 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-white transition-colors"
+                                                            >
                                                                 <Edit size={18} />
                                                             </button>
                                                             <button
@@ -427,7 +445,7 @@ const AdminDashboard = () => {
             </main>
 
             {/* Simple Add Car Modal */}
-            {showAddCarModal && (
+            {showCarModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
                     <motion.div
                         initial={{ opacity: 0, scale: 0.9 }}
@@ -435,31 +453,35 @@ const AdminDashboard = () => {
                         className="bg-[#0a0a0a] glass border border-white/10 w-full max-w-lg p-8 rounded-[2rem] relative"
                     >
                         <button
-                            onClick={() => setShowAddCarModal(false)}
+                            onClick={() => {
+                                setShowCarModal(false);
+                                setEditingCar(null);
+                            }}
                             className="absolute top-6 right-6 text-zinc-500 hover:text-white"
                         >
                             <XCircle />
                         </button>
-                        <h2 className="text-2xl font-black mb-6">Ajouter un véhicule</h2>
-                        <form className="space-y-4" onSubmit={handleAddCar}>
+                        <h2 className="text-2xl font-black mb-6">{editingCar ? 'Modifier le véhicule' : 'Ajouter un véhicule'}</h2>
+                        <form className="space-y-4" onSubmit={handleCarSubmit}>
                             <div className="grid grid-cols-2 gap-4">
-                                <input name="brand" placeholder="Marque" required className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-brand-primary w-full" />
-                                <input name="model" placeholder="Modèle" required className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-brand-primary w-full" />
+                                <input name="brand" placeholder="Marque" defaultValue={editingCar?.brand} required className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-brand-primary w-full" />
+                                <input name="model" placeholder="Modèle" defaultValue={editingCar?.model} required className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-brand-primary w-full" />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
-                                <select name="category" className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-brand-primary w-full text-zinc-400">
+                                <select name="category" defaultValue={editingCar?.category || 'Sport'} className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-brand-primary w-full text-zinc-400">
                                     <option value="Sport">Sport</option>
                                     <option value="Luxe">Luxe</option>
                                     <option value="SUV">SUV</option>
+                                    <option value="Supercar">Supercar</option>
                                 </select>
-                                <input name="price" type="number" placeholder="Prix / Jour" required className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-brand-primary w-full" />
+                                <input name="price" type="number" placeholder="Prix / Jour" defaultValue={editingCar?.price_per_day} required className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-brand-primary w-full" />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
-                                <select name="transmission" className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-brand-primary w-full text-zinc-400">
-                                    <option value="Automatic">Automatique</option>
+                                <select name="transmission" defaultValue={editingCar?.transmission || 'Auto'} className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-brand-primary w-full text-zinc-400">
+                                    <option value="Auto">Automatique</option>
                                     <option value="Manual">Manuelle</option>
                                 </select>
-                                <select name="fuel" className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-brand-primary w-full text-zinc-400">
+                                <select name="fuel" defaultValue={editingCar?.fuel || 'Essence'} className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-brand-primary w-full text-zinc-400">
                                     <option value="Essence">Essence</option>
                                     <option value="Diesel">Diesel</option>
                                     <option value="Electric">Électrique</option>
@@ -477,11 +499,14 @@ const AdminDashboard = () => {
                                 />
                                 <div className="flex flex-col items-center gap-2 text-zinc-500 group-hover:text-white transition-colors">
                                     <UploadCloud size={32} />
-                                    <span className="text-xs font-bold uppercase tracking-widest">Glisser ou cliquer pour photo</span>
+                                    <span className="text-xs font-bold uppercase tracking-widest">
+                                        {editingCar ? 'Changer la photo' : 'Glisser ou cliquer pour photo'}
+                                    </span>
+                                    {editingCar && <p className="text-[10px] text-zinc-600 italic mt-1">Laissez vide pour conserver l'actuelle</p>}
                                 </div>
                             </div>
-                            <button className="w-full bg-brand-primary hover:bg-blue-600 text-white font-bold py-4 rounded-xl mt-4 transition-colors">
-                                Confirmer l'ajout
+                            <button className="w-full bg-brand-primary hover:bg-blue-600 text-white font-black uppercase tracking-widest py-4 rounded-xl mt-4 transition-colors">
+                                {editingCar ? 'Mettre à jour' : "Confirmer l'ajout"}
                             </button>
                         </form>
                     </motion.div>
