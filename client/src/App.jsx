@@ -9,6 +9,7 @@ import CarDetails from './pages/CarDetails';
 import Reservation from './pages/Reservation';
 import Login from './pages/Login';
 import AdminDashboard from './pages/AdminDashboard';
+import Profile from './pages/Profile';
 import About from './pages/About';
 import Contact from './pages/Contact';
 
@@ -38,6 +39,7 @@ function App() {
               <Route path="/reservation" element={<Reservation />} />
               <Route path="/reservation/:id" element={<Reservation />} />
               <Route path="/login" element={<Login />} />
+              <Route path="/profile" element={<Profile />} />
               <Route path="/about" element={<About />} />
               <Route path="/contact" element={<Contact />} />
 

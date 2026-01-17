@@ -6,11 +6,13 @@ import axios from 'axios';
 import API_URL from '../config';
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import { useAuth } from '../context/AuthContext';
 
 const Reservation = () => {
     const { id } = useParams();
     const location = useLocation();
     const navigate = useNavigate();
+    const { user } = useAuth();
     const passedCar = location.state?.car;
 
     const searchParams = new URLSearchParams(location.search);
@@ -19,8 +21,8 @@ const Reservation = () => {
 
     const [car, setCar] = useState(passedCar || null);
     const [formData, setFormData] = useState({
-        name: '',
-        email: '',
+        name: user?.name || '',
+        email: user?.email || '',
         startDate: urlStart || '',
         endDate: urlEnd || ''
     });
@@ -29,6 +31,16 @@ const Reservation = () => {
     const [showSummary, setShowSummary] = useState(false);
     const [status, setStatus] = useState(null); // 'success', 'error', 'loading'
     const [errorMessage, setErrorMessage] = useState('');
+
+    useEffect(() => {
+        if (user) {
+            setFormData(prev => ({
+                ...prev,
+                name: user.name,
+                email: user.email
+            }));
+        }
+    }, [user]);
 
     useEffect(() => {
         if (id && !car) {
@@ -84,10 +96,14 @@ const Reservation = () => {
 
     const calculateTotal = () => {
         if (!formData.startDate || !formData.endDate || !car) return 0;
-        const start = new Date(formData.startDate);
-        const end = new Date(formData.endDate);
+        const start = parseLocalDate(formData.startDate);
+        const end = parseLocalDate(formData.endDate);
         const diff = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
         return diff > 0 ? diff * (car.price || car.price_per_day) : 0;
+    };
+
+    const validateEmail = (email) => {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
     };
 
     const isIntervalAvailable = (start, end) => {
@@ -118,6 +134,7 @@ const Reservation = () => {
         try {
             await axios.post(`${API_URL}/api/bookings`, {
                 carId: car.id,
+                userId: user?.id || null,
                 startDate: formData.startDate,
                 endDate: formData.endDate,
                 customerName: formData.name,

@@ -76,6 +76,7 @@ exports.createBooking = async (req, res) => {
 
         const newBooking = await Booking.create({
             carId,
+            userId: req.body.userId || null,
             start_date: startDate,
             end_date: endDate,
             customer_name: customerName,
@@ -139,5 +140,20 @@ exports.deleteBooking = async (req, res) => {
         res.json({ message: 'Booking deleted' });
     } catch (error) {
         res.status(500).json({ message: 'Error deleting booking' });
+    }
+};
+
+// Get personal bookings (User)
+exports.getMyBookings = async (req, res) => {
+    try {
+        const bookings = await Booking.findAll({
+            where: { userId: req.user.id },
+            include: [{ model: Car, attributes: ['brand', 'model', 'image', 'images'] }],
+            order: [['createdAt', 'DESC']]
+        });
+        res.json(bookings);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Error fetching personal bookings' });
     }
 };

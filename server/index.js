@@ -22,16 +22,16 @@ try {
     const carRoutes = require('./routes/carRoutes');
     const messageRoutes = require('./routes/messageRoutes');
     const bookingRoutes = require('./routes/bookingRoutes');
+    const authRoutes = require('./routes/authRoutes');
+
     app.use('/api/cars', carRoutes);
     app.use('/api/messages', messageRoutes);
     app.use('/api/bookings', bookingRoutes);
+    app.use('/api/auth', authRoutes);
     console.log("Routes Cars, Messages & Bookings chargées avec succès !");
 } catch (error) {
     console.error("ERREUR FATALE CHARGEMENT ROUTES CARS:", error);
 }
-// app.use('/api/auth', require('./routes/authRoutes'));
-// app.use('/api/bookings', require('./routes/bookingRoutes'));
-
 app.get('/', (req, res) => {
     res.send('RentX API V2 is running - Routes Loaded? Check Logs');
 });

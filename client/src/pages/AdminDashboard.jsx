@@ -8,7 +8,12 @@ import {
 import axios from 'axios';
 import API_URL from '../config';
 
+import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
+
 const AdminDashboard = () => {
+    const { user, logout } = useAuth();
+    const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('dashboard');
     const [cars, setCars] = useState([]);
     const [messages, setMessages] = useState([]);
@@ -17,12 +22,21 @@ const AdminDashboard = () => {
     const [editingCar, setEditingCar] = useState(null);
     const [loading, setLoading] = useState(true);
 
+    // Protection
+    useEffect(() => {
+        if (!user || user.role !== 'admin') {
+            navigate('/login');
+        }
+    }, [user, navigate]);
+
     // Fetch Data
     useEffect(() => {
-        fetchCars();
-        fetchMessages();
-        fetchBookings();
-    }, []);
+        if (user && user.role === 'admin') {
+            fetchCars();
+            fetchMessages();
+            fetchBookings();
+        }
+    }, [user]);
 
     const fetchCars = async () => {
         try {
@@ -191,7 +205,10 @@ const AdminDashboard = () => {
                     ))}
                 </nav>
                 <div className="p-4 border-t border-white/5">
-                    <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 transition-colors">
+                    <button
+                        onClick={() => { logout(); navigate('/'); }}
+                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 transition-colors"
+                    >
                         <LogOut size={20} />
                         <span className="font-bold text-sm">Déconnexion</span>
                     </button>
