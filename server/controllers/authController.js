@@ -56,7 +56,7 @@ exports.login = async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        // 1. Check if it's an admin first
+        // 1. Check if it's an admin first (PRIORITY)
         const admin = await Admin.findOne({ where: { email } });
         if (admin) {
             const isMatch = await bcrypt.compare(password, admin.password);
