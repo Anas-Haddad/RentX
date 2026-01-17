@@ -302,6 +302,73 @@ const AdminDashboard = () => {
                         </motion.div>
                     )}
 
+                    {activeTab === 'bookings' && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            key="bookings"
+                            className="space-y-6"
+                        >
+                            <h1 className="text-3xl font-black">Gestion des Réservations</h1>
+                            <div className="glass rounded-[2rem] border-white/5 overflow-hidden">
+                                <table className="w-full text-left">
+                                    <thead className="bg-white/5 text-zinc-400 text-xs uppercase tracking-wider font-black">
+                                        <tr>
+                                            <th className="p-6">Client</th>
+                                            <th className="p-6">Véhicule</th>
+                                            <th className="p-6">Période</th>
+                                            <th className="p-6">Prix Total</th>
+                                            <th className="p-6">Status</th>
+                                            <th className="p-6 text-right">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-white/5">
+                                        {bookings.map((b) => (
+                                            <tr key={b.id} className="hover:bg-white/5 transition-colors">
+                                                <td className="p-6">
+                                                    <div className="font-bold">{b.customer_name}</div>
+                                                    <div className="text-zinc-500 text-xs">{b.customer_email}</div>
+                                                </td>
+                                                <td className="p-6">
+                                                    <div className="font-bold">{b.Car?.brand} {b.Car?.model}</div>
+                                                </td>
+                                                <td className="p-6 text-zinc-400 text-sm">
+                                                    Du {new Date(b.start_date).toLocaleDateString()} <br />
+                                                    Au {new Date(b.end_date).toLocaleDateString()}
+                                                </td>
+                                                <td className="p-6 font-bold text-brand-primary">{b.total_price} TND</td>
+                                                <td className="p-6">
+                                                    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${b.status === 'confirmed' ? 'bg-green-500/10 text-green-500' :
+                                                        b.status === 'pending' ? 'bg-yellow-500/10 text-yellow-500' :
+                                                            'bg-red-500/10 text-red-500'
+                                                        }`}>
+                                                        {b.status === 'confirmed' ? 'Confirmé' : b.status === 'pending' ? 'En attente' : 'Annulé'}
+                                                    </span>
+                                                </td>
+                                                <td className="p-6">
+                                                    <div className="flex justify-end gap-2">
+                                                        {b.status === 'pending' && (
+                                                            <button onClick={() => updateBookingStatus(b.id, 'confirmed')} className="p-2 hover:bg-green-500/20 rounded-lg text-green-500 transition-colors" title="Confirmer">
+                                                                <CheckCircle size={18} />
+                                                            </button>
+                                                        )}
+                                                        <button onClick={() => deleteBooking(b.id)} className="p-2 hover:bg-red-500/20 rounded-lg text-red-500 transition-colors" title="Supprimer">
+                                                            <Trash2 size={18} />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                                {bookings.length === 0 && (
+                                    <div className="p-10 text-center text-zinc-500">Aucune réservation pour le moment.</div>
+                                )}
+                            </div>
+                        </motion.div>
+                    )}
+
                     {activeTab === 'messages' && (
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}

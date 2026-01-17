@@ -26,7 +26,11 @@ const Booking = sequelize.define('Booking', {
     customer_email: {
         type: DataTypes.STRING,
         allowNull: false,
-        validate: { isEmail: true }
+        validate: {
+            isEmail: {
+                msg: "Format de l'email invalide"
+            }
+        }
     },
     status: {
         type: DataTypes.ENUM('pending', 'confirmed', 'completed', 'cancelled'),

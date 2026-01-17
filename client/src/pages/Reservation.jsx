@@ -13,17 +13,22 @@ const Reservation = () => {
     const navigate = useNavigate();
     const passedCar = location.state?.car;
 
+    const searchParams = new URLSearchParams(location.search);
+    const urlStart = searchParams.get('start');
+    const urlEnd = searchParams.get('end');
+
     const [car, setCar] = useState(passedCar || null);
     const [formData, setFormData] = useState({
         name: '',
         email: '',
-        startDate: '',
-        endDate: ''
+        startDate: urlStart || '',
+        endDate: urlEnd || ''
     });
 
     const [busyDates, setBusyDates] = useState([]);
     const [showSummary, setShowSummary] = useState(false);
     const [status, setStatus] = useState(null); // 'success', 'error', 'loading'
+    const [errorMessage, setErrorMessage] = useState('');
 
     useEffect(() => {
         if (id && !car) {
@@ -39,6 +44,22 @@ const Reservation = () => {
         }
     }, [id, car]);
 
+    // Helper to parse "YYYY-MM-DD" as local Date
+    const parseLocalDate = (dateStr) => {
+        if (!dateStr) return null;
+        const [y, m, d] = dateStr.split('-').map(Number);
+        return new Date(y, m - 1, d);
+    };
+
+    // Helper to format Date as "YYYY-MM-DD" local
+    const formatLocalDate = (date) => {
+        if (!date) return '';
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    };
+
     // Fetch Busy Dates
     useEffect(() => {
         if (car) {
@@ -47,10 +68,10 @@ const Reservation = () => {
                     const res = await axios.get(`${API_URL}/api/bookings/busy-dates`, {
                         params: { carId: car.id }
                     });
-                    // Convert "YYYY-MM-DD" back to Date objects for react-datepicker
+                    // Convert "YYYY-MM-DD" back to local Date objects for react-datepicker
                     const intervals = res.data.map(b => ({
-                        start: new Date(b.start_date),
-                        end: new Date(b.end_date)
+                        start: parseLocalDate(b.start_date),
+                        end: parseLocalDate(b.end_date)
                     }));
                     setBusyDates(intervals);
                 } catch (e) {
@@ -69,7 +90,30 @@ const Reservation = () => {
         return diff > 0 ? diff * (car.price || car.price_per_day) : 0;
     };
 
+    const isIntervalAvailable = (start, end) => {
+        if (!start || !end) return false;
+        const s = parseLocalDate(start);
+        const e = parseLocalDate(end);
+
+        return !busyDates.some(busy => {
+            // Overlap check using local date objects
+            return (s < busy.end && e > busy.start);
+        });
+    };
+
     const handleConfirm = async () => {
+        if (!validateEmail(formData.email)) {
+            setStatus('error');
+            setErrorMessage("Veuillez saisir un email valide.");
+            return;
+        }
+
+        if (!isIntervalAvailable(formData.startDate, formData.endDate)) {
+            setStatus('error');
+            setErrorMessage("Certaines dates de votre sélection sont déjà réservées. Veuillez choisir une autre période.");
+            return;
+        }
+
         setStatus('loading');
         try {
             await axios.post(`${API_URL}/api/bookings`, {
@@ -82,7 +126,14 @@ const Reservation = () => {
             });
             setStatus('success');
         } catch (e) {
+            console.error(e);
             setStatus('error');
+            // Store the specific error message if available
+            if (e.response?.data?.details) {
+                setErrorMessage(e.response.data.details);
+            } else {
+                setErrorMessage("Erreur lors de la réservation. Veuillez réessayer.");
+            }
         }
     };
 
@@ -140,11 +191,11 @@ const Reservation = () => {
                                     <div className="space-y-4">
                                         <label className="ml-4">Départ</label>
                                         <DatePicker
-                                            selected={formData.startDate ? new Date(formData.startDate) : null}
-                                            onChange={(date) => setFormData({ ...formData, startDate: date.toISOString().split('T')[0] })}
+                                            selected={formData.startDate ? parseLocalDate(formData.startDate) : null}
+                                            onChange={(date) => setFormData({ ...formData, startDate: formatLocalDate(date) })}
                                             selectsStart
-                                            startDate={formData.startDate ? new Date(formData.startDate) : null}
-                                            endDate={formData.endDate ? new Date(formData.endDate) : null}
+                                            startDate={formData.startDate ? parseLocalDate(formData.startDate) : null}
+                                            endDate={formData.endDate ? parseLocalDate(formData.endDate) : null}
                                             minDate={new Date()}
                                             excludeDateIntervals={busyDates}
                                             placeholderText="Sélectionner"
@@ -154,12 +205,12 @@ const Reservation = () => {
                                     <div className="space-y-4">
                                         <label className="ml-4">Retour</label>
                                         <DatePicker
-                                            selected={formData.endDate ? new Date(formData.endDate) : null}
-                                            onChange={(date) => setFormData({ ...formData, endDate: date.toISOString().split('T')[0] })}
+                                            selected={formData.endDate ? parseLocalDate(formData.endDate) : null}
+                                            onChange={(date) => setFormData({ ...formData, endDate: formatLocalDate(date) })}
                                             selectsEnd
-                                            startDate={formData.startDate ? new Date(formData.startDate) : null}
-                                            endDate={formData.endDate ? new Date(formData.endDate) : null}
-                                            minDate={formData.startDate ? new Date(formData.startDate) : new Date()}
+                                            startDate={formData.startDate ? parseLocalDate(formData.startDate) : null}
+                                            endDate={formData.endDate ? parseLocalDate(formData.endDate) : null}
+                                            minDate={formData.startDate ? parseLocalDate(formData.startDate) : new Date()}
                                             excludeDateIntervals={busyDates}
                                             placeholderText="Sélectionner"
                                             className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 outline-none focus:border-brand-primary transition-colors text-white"
@@ -171,8 +222,12 @@ const Reservation = () => {
 
                         {/* Summary & Final Button */}
                         <button
-                            disabled={!formData.startDate || !formData.endDate || !formData.name || !formData.email}
-                            onClick={() => setShowSummary(true)}
+                            disabled={!formData.startDate || !formData.endDate || !formData.name || !formData.email || !validateEmail(formData.email)}
+                            onClick={() => {
+                                setStatus(null);
+                                setErrorMessage('');
+                                setShowSummary(true);
+                            }}
                             className="w-full bg-white text-black font-black uppercase tracking-widest py-6 rounded-[2.5rem] hover:bg-brand-primary hover:text-white transition-all shadow-2xl active:scale-95 flex justify-center items-center gap-4 text-lg disabled:opacity-30 disabled:cursor-not-allowed"
                         >
                             Récapitulatif & Paiement <ChevronRight />
@@ -216,7 +271,11 @@ const Reservation = () => {
                                     {status === 'loading' ? 'Validation...' : 'Confirmer & Réserver'}
                                 </button>
                             </div>
-                            {status === 'error' && <p className="text-red-500 text-center text-[10px] mt-4 font-bold">Erreur système. Veuillez réessayer.</p>}
+                            {status === 'error' && (
+                                <p className="text-red-500 text-center text-[10px] mt-4 font-bold border border-red-500/20 bg-red-500/5 p-3 rounded-xl animate-pulse">
+                                    {errorMessage || "Erreur système. Veuillez réessayer."}
+                                </p>
+                            )}
                         </motion.div>
                     </div>
                 )}

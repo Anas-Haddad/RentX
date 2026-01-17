@@ -1,10 +1,10 @@
-const Car = require('../models/Car');
+const { Car, Booking } = require('../models');
 const { Op } = require('sequelize');
 
 // Get all cars with filtering
 exports.getAllCars = async (req, res) => {
     try {
-        const { category, minPrice, maxPrice } = req.query;
+        const { category, minPrice, maxPrice, startDate, endDate } = req.query;
         let where = {};
 
         if (category && category !== 'All') {
@@ -17,7 +17,29 @@ exports.getAllCars = async (req, res) => {
             if (maxPrice) where.price_per_day[Op.lte] = maxPrice;
         }
 
-        const cars = await Car.findAll({ where });
+        let cars;
+        if (startDate && endDate) {
+            // Find IDs of cars that ARE booked during this period
+            const bookedCars = await Booking.findAll({
+                where: {
+                    status: { [Op.ne]: 'cancelled' },
+                    [Op.or]: [
+                        {
+                            start_date: { [Op.lt]: endDate },
+                            end_date: { [Op.gt]: startDate }
+                        }
+                    ]
+                },
+                attributes: ['carId']
+            });
+
+            const bookedCarIds = bookedCars.map(b => b.carId);
+
+            // Filter cars that are NOT in the bookedCarIds list
+            where.id = { [Op.notIn]: bookedCarIds.length > 0 ? bookedCarIds : [0] };
+        }
+
+        cars = await Car.findAll({ where });
         res.json(cars);
     } catch (error) {
         console.error(error);

@@ -1,15 +1,21 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const CarCard = ({ car }) => {
     const navigate = useNavigate();
+    const location = useLocation();
+    const searchParams = new URLSearchParams(location.search);
+    const start = searchParams.get('start');
+    const end = searchParams.get('end');
+
+    // Create a query string with dates if they exist
+    const dateParams = start && end ? `?start=${start}&end=${end}` : '';
 
     // Handle different data structures (API vs Mock)
     const displayPrice = car.price || car.price_per_day;
     const displayImage = car.image || (car.images ? (typeof car.images === 'string' ? JSON.parse(car.images)[0] : car.images[0]) : '/images/car1.png');
 
     return (
-        <div className="glass-card group overflow-hidden cursor-pointer" onClick={() => navigate(`/cars/${car.id}`, { state: { car } })}>
+        <div className="glass-card group overflow-hidden cursor-pointer" onClick={() => navigate(`/cars/${car.id}${dateParams}`, { state: { car } })}>
             <div className="relative h-56 overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent z-10 opacity-60 group-hover:opacity-40 transition-opacity"></div>
                 <img
@@ -39,7 +45,7 @@ const CarCard = ({ car }) => {
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
-                            navigate(`/reservation/${car.id}`, { state: { car } });
+                            navigate(`/reservation/${car.id}${dateParams}`, { state: { car } });
                         }}
                         className="bg-white text-black hover:bg-brand-primary hover:text-white px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-xl shadow-black/10 active:scale-95"
                     >

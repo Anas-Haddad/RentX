@@ -115,7 +115,11 @@ const CarDetails = () => {
                         </div>
 
                         <button
-                            onClick={() => navigate(`/reservation/${car.id}`, { state: { car } })}
+                            onClick={() => {
+                                const searchParams = new URLSearchParams(location.search);
+                                const q = searchParams.toString();
+                                navigate(`/reservation/${car.id}${q ? '?' + q : ''}`, { state: { car } });
+                            }}
                             className="w-full bg-white text-black font-black uppercase tracking-widest py-6 rounded-3xl hover:bg-brand-primary hover:text-white transition-all shadow-2xl active:scale-95 flex justify-center items-center gap-4 text-lg"
                         >
                             <Calendar className="h-5 w-5" /> Réserver Maintenant

@@ -87,6 +87,14 @@ exports.createBooking = async (req, res) => {
         res.status(201).json(newBooking);
     } catch (error) {
         console.error('SERVER BOOKING ERROR:', error);
+
+        if (error.name === 'SequelizeValidationError') {
+            return res.status(400).json({
+                message: 'Erreur de validation',
+                details: error.errors.map(e => e.message).join(', ')
+            });
+        }
+
         res.status(500).json({
             message: 'Error creating booking',
             details: error.message

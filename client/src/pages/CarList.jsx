@@ -6,7 +6,14 @@ import CarCard from '../components/ui/CarCard';
 import axios from 'axios';
 import API_URL from '../config';
 
+import { useLocation } from 'react-router-dom';
+
 const CarList = () => {
+    const location = useLocation();
+    const searchParams = new URLSearchParams(location.search);
+    const startDate = searchParams.get('start');
+    const endDate = searchParams.get('end');
+
     const [selectedCategory, setSelectedCategory] = useState('All');
     const [cars, setCars] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -25,30 +32,45 @@ const CarList = () => {
 
     useEffect(() => {
         const loadCars = async () => {
+            setLoading(true);
             try {
                 // Try fetching from API
-                const res = await axios.get(`${API_URL}/api/cars`);
+                const res = await axios.get(`${API_URL}/api/cars`, {
+                    params: {
+                        startDate,
+                        endDate
+                    }
+                });
                 if (res.data && res.data.length > 0) {
                     // Map API data to match component structure if needed
                     const apiCars = res.data.map(c => ({
                         ...c,
                         price: c.price_per_day, // Map backend field to frontend prop
-                        image: c.image || c.images?.[0] || '/images/car1.png'
+                        image: c.image || (c.images ? JSON.parse(c.images)[0] : '/images/car1.png')
                     }));
                     setCars(apiCars);
                 } else {
-                    // If API empty, use Mock
-                    setCars(MOCK_CARS);
+                    // If API empty or no results, use Mock if no filter applied
+                    if (!startDate && !endDate) {
+                        setCars(MOCK_CARS);
+                    } else {
+                        setCars([]);
+                    }
                 }
             } catch (error) {
-                console.warn("API unavailable, using mock data:", error);
-                setCars(MOCK_CARS);
+                console.warn("API unavailable:", error);
+                // Only show mocks if no filters are active
+                if (!startDate && !endDate) {
+                    setCars(MOCK_CARS);
+                } else {
+                    setCars([]);
+                }
             } finally {
                 setLoading(false);
             }
         };
         loadCars();
-    }, []);
+    }, [location.search]);
 
     const categories = ['All', 'Sport', 'Luxe', 'SUV', 'Supercar'];
 

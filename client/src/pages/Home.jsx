@@ -1,18 +1,43 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Calendar, MapPin, CheckCircle, Star } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import CarCard from '../components/ui/CarCard';
+import axios from 'axios';
+import API_URL from '../config';
 
 const Home = () => {
-    const featuredCars = [
-        { id: 1, brand: 'Audi', model: 'RS6 Avant', price: 550, category: 'Sport', transmission: 'Auto', fuel: 'Essence', image: '/images/hero_rs6.png' },
-        { id: 2, brand: 'Mercedes-Benz', model: 'G-Class', price: 450, category: 'Luxe', transmission: 'Auto', fuel: 'Essence', image: '/images/car1.png' },
-        { id: 3, brand: 'Range Rover', model: 'Sport', price: 400, category: 'SUV', transmission: 'Auto', fuel: 'Diesel', image: '/images/car2.png' },
-        { id: 4, brand: 'BMW', model: 'M5 CS', price: 500, category: 'Sport', transmission: 'Auto', fuel: 'Essence', image: '/images/car3.png' },
-        { id: 5, brand: 'Porsche', model: '911 Turbo S', price: 700, category: 'Luxe', transmission: 'Auto', fuel: 'Essence', image: '/images/car1.png' },
-        { id: 6, brand: 'Bentley', model: 'Continental GT', price: 800, category: 'Luxe', transmission: 'Auto', fuel: 'Essence', image: '/images/car2.png' },
-    ];
+    const navigate = useNavigate();
+    const [searchDates, setSearchDates] = useState({
+        start: '',
+        end: ''
+    });
+    const [featuredCars, setFeaturedCars] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    const handleSearch = () => {
+        if (searchDates.start && searchDates.end) {
+            navigate(`/cars?start=${searchDates.start}&end=${searchDates.end}`);
+        } else {
+            navigate('/cars');
+        }
+    };
+
+    useEffect(() => {
+        const fetchFeatured = async () => {
+            try {
+                const res = await axios.get(`${API_URL}/api/cars`);
+                if (res.data && res.data.length > 0) {
+                    setFeaturedCars(res.data.slice(0, 6)); // Show first 6
+                }
+            } catch (e) {
+                console.error("Error fetching featured cars");
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchFeatured();
+    }, []);
 
     return (
         <div className="bg-transparent min-h-screen text-white overflow-x-hidden">
@@ -20,11 +45,11 @@ const Home = () => {
             <section className="relative h-screen flex items-center justify-center overflow-hidden">
                 {/* Background Video or Image with deep masking */}
                 <div className="absolute inset-0 z-0 scale-105">
-                    <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/40 to-[#050505] z-10"></div>
+                    <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/40 to-[#030303] z-10"></div>
                     <img
                         src="/images/hero_rs6.png"
                         alt="Audi RS6 Hero"
-                        className="w-full h-full object-cover opacity-60 animate-float-slow"
+                        className="w-full h-full object-cover opacity-60 animate-float"
                     />
                 </div>
 
@@ -58,25 +83,38 @@ const Home = () => {
                                 <MapPin className="text-brand-primary h-5 w-5 mr-4" />
                                 <div className="text-left">
                                     <label className="block text-[9px] uppercase text-zinc-500 font-black tracking-widest mb-1">Destination</label>
-                                    <input type="text" placeholder="Ville..." className="bg-transparent w-full text-white placeholder-zinc-700 font-bold outline-none text-sm" />
+                                    <input type="text" placeholder="Ville..." className="bg-transparent w-full text-white placeholder-zinc-700 font-bold outline-none text-sm" defaultValue="Tunis" />
                                 </div>
                             </div>
                             <div className="group flex items-center px-8 py-4 bg-white/5 rounded-3xl hover:bg-white/10 transition-colors border border-transparent hover:border-white/10">
                                 <Calendar className="text-brand-primary h-5 w-5 mr-4" />
                                 <div className="text-left">
                                     <label className="block text-[9px] uppercase text-zinc-500 font-black tracking-widest mb-1">Départ</label>
-                                    <input type="date" className="bg-transparent w-full text-white font-bold outline-none text-sm cursor-pointer invert" />
+                                    <input
+                                        type="date"
+                                        value={searchDates.start}
+                                        onChange={(e) => setSearchDates({ ...searchDates, start: e.target.value })}
+                                        className="bg-transparent w-full text-white font-bold outline-none text-sm cursor-pointer invert"
+                                    />
                                 </div>
                             </div>
                             <div className="group flex items-center px-8 py-4 bg-white/5 rounded-3xl hover:bg-white/10 transition-colors border border-transparent hover:border-white/10">
                                 <Calendar className="text-brand-primary h-5 w-5 mr-4" />
                                 <div className="text-left">
                                     <label className="block text-[9px] uppercase text-zinc-500 font-black tracking-widest mb-1">Retour</label>
-                                    <input type="date" className="bg-transparent w-full text-white font-bold outline-none text-sm cursor-pointer invert" />
+                                    <input
+                                        type="date"
+                                        value={searchDates.end}
+                                        onChange={(e) => setSearchDates({ ...searchDates, end: e.target.value })}
+                                        className="bg-transparent w-full text-white font-bold outline-none text-sm cursor-pointer invert"
+                                    />
                                 </div>
                             </div>
                             <div className="px-1">
-                                <button className="w-full bg-white text-black hover:bg-brand-primary hover:text-white font-black py-5 rounded-[2rem] transition-all flex justify-center items-center text-xs uppercase tracking-widest shadow-xl active:scale-95">
+                                <button
+                                    onClick={handleSearch}
+                                    className="w-full bg-white text-black hover:bg-brand-primary hover:text-white font-black py-5 rounded-[2rem] transition-all flex justify-center items-center text-xs uppercase tracking-widest shadow-xl active:scale-95"
+                                >
                                     <Search className="mr-3 h-5 w-5" /> Réserver
                                 </button>
                             </div>
