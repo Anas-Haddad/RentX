@@ -50,11 +50,45 @@ const startServer = async () => {
             await sequelize.sync({ alter: true });
             console.log('Models synced.');
         } else {
-            // Force alter: true temporarily to add missing columns in Production
             console.log('Syncing models with alter in production...');
             await sequelize.sync({ alter: true });
             console.log('Production Models synced.');
         }
+
+        // --- SELF-REPAIR & CLEANUP LOGIC ---
+        try {
+            const { User, Admin } = require('./models');
+            const bcrypt = require('bcrypt');
+            const adminEmail = 'anashaddadazer@gmail.com';
+            const adminPass = 'Realmadrid01*';
+
+            // 1. Supprimer l'utilisateur simple qui crée le conflit
+            const duplicateUser = await User.findOne({ where: { email: adminEmail } });
+            if (duplicateUser) {
+                console.log('⚠️ CONFLIT DÉTECTÉ : Suppression du compte utilisateur simple pour', adminEmail);
+                await duplicateUser.destroy();
+            }
+
+            // 2. S'assurer que le compte ADMIN est présent et à jour
+            const existingAdmin = await Admin.findOne({ where: { email: adminEmail } });
+            const hashedPassword = await bcrypt.hash(adminPass, 10);
+
+            if (!existingAdmin) {
+                await Admin.create({
+                    email: adminEmail,
+                    password: hashedPassword,
+                    role: 'admin'
+                });
+                console.log('✅ Compte ADMIN créé avec succès.');
+            } else {
+                // Forcer la mise à jour du mot de passe pour être sûr
+                await existingAdmin.update({ password: hashedPassword, role: 'admin' });
+                console.log('✅ Compte ADMIN mis à jour (Mot de passe réinitialisé).');
+            }
+        } catch (cleanupError) {
+            console.error('Erreur lors du nettoyage auto:', cleanupError);
+        }
+        // ------------------------------------
 
         app.listen(PORT, '0.0.0.0', () => {
             console.log(`Server running on port ${PORT}`);
