@@ -12,7 +12,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 const AdminDashboard = () => {
-    const { user, logout } = useAuth();
+    const { user, loading: authLoading, logout } = useAuth();
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('dashboard');
     const [cars, setCars] = useState([]);
@@ -22,21 +22,36 @@ const AdminDashboard = () => {
     const [editingCar, setEditingCar] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    // Protection
+    // Protection logic
     useEffect(() => {
-        if (!user || user.role !== 'admin') {
-            navigate('/login');
+        if (!authLoading) {
+            if (!user || user.role !== 'admin') {
+                navigate('/login');
+            }
         }
-    }, [user, navigate]);
+    }, [user, authLoading, navigate]);
 
-    // Fetch Data
+    // Initial Data Fetch
     useEffect(() => {
         if (user && user.role === 'admin') {
-            fetchCars();
-            fetchMessages();
-            fetchBookings();
+            const loadData = async () => {
+                setLoading(true);
+                await Promise.all([fetchCars(), fetchMessages(), fetchBookings()]);
+                setLoading(false);
+            };
+            loadData();
         }
     }, [user]);
+
+    if (authLoading) {
+        return (
+            <div className="min-h-screen bg-[#050505] flex items-center justify-center">
+                <div className="animate-spin w-10 h-10 border-4 border-brand-primary border-t-transparent rounded-full"></div>
+            </div>
+        );
+    }
+
+    if (!user || user.role !== 'admin') return null;
 
     const fetchCars = async () => {
         try {
