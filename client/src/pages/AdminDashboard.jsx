@@ -258,6 +258,85 @@ const AdminDashboard = () => {
                                     </div>
                                 ))}
                             </div>
+
+                            {/* Two Column Layout for Quick Actions */}
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                {/* Left Column: Pending Demands */}
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <h2 className="text-xl font-black uppercase tracking-tighter">En attente d'approbation</h2>
+                                        <span className="bg-yellow-500/10 text-yellow-500 text-[10px] font-black px-2 py-1 rounded-full uppercase">Action requise</span>
+                                    </div>
+                                    <div className="space-y-4">
+                                        {bookings.filter(b => b.status === 'pending').slice(0, 5).map((booking, i) => (
+                                            <div key={i} className="glass p-5 rounded-[2rem] border-white/5 flex items-center justify-between group hover:border-white/10 transition-all">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center font-bold text-brand-primary text-xl">
+                                                        {booking.customer_name?.charAt(0)}
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="font-bold text-sm">{booking.customer_name}</h4>
+                                                        <p className="text-xs text-zinc-500">{booking.Car?.brand} {booking.Car?.model}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-2 md:opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <button
+                                                        onClick={() => updateBookingStatus(booking.id, 'confirmed')}
+                                                        className="p-2 bg-green-500/10 text-green-500 rounded-xl hover:bg-green-500 hover:text-white transition-all"
+                                                        title="Confirmer"
+                                                    >
+                                                        <CheckCircle size={18} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => updateBookingStatus(booking.id, 'cancelled')}
+                                                        className="p-2 bg-red-500/10 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all"
+                                                        title="Annuler"
+                                                    >
+                                                        <XCircle size={18} />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                        {bookings.filter(b => b.status === 'pending').length === 0 && (
+                                            <div className="p-10 text-center glass rounded-[2rem] border-white/5 text-zinc-600 text-sm font-bold uppercase tracking-widest">
+                                                Aucune demande en attente
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Right Column: Recent Confirmations */}
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <h2 className="text-xl font-black uppercase tracking-tighter">Confirmations récentes</h2>
+                                        <button onClick={() => setActiveTab('bookings')} className="text-zinc-500 hover:text-white text-xs font-bold transition-colors">Voir tout</button>
+                                    </div>
+                                    <div className="space-y-4">
+                                        {bookings.filter(b => b.status === 'confirmed').slice(0, 5).map((booking, i) => (
+                                            <div key={i} className="glass p-5 rounded-[2rem] border-white/5 flex items-center justify-between group hover:bg-white/5 transition-all">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-12 h-12 rounded-2xl bg-green-500/10 flex items-center justify-center">
+                                                        <CheckCircle size={18} className="text-green-500" />
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="font-bold text-sm">{booking.customer_name}</h4>
+                                                        <p className="text-[10px] text-zinc-600 font-black uppercase tracking-widest">Payé: {booking.total_price} TND</p>
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <div className="text-xs font-bold text-white/50">{new Date(booking.start_date).toLocaleDateString()}</div>
+                                                    <div className="text-[10px] text-zinc-500">{booking.Car?.brand}</div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                        {bookings.filter(b => b.status === 'confirmed').length === 0 && (
+                                            <div className="p-10 text-center glass rounded-[2rem] border-white/5 text-zinc-600 text-sm font-bold uppercase tracking-widest">
+                                                Aucun voyage confirmé
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
                         </motion.div>
                     )}
 

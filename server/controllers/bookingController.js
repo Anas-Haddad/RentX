@@ -146,29 +146,38 @@ exports.deleteBooking = async (req, res) => {
 // Get personal bookings (User)
 exports.getMyBookings = async (req, res) => {
     try {
-        // Find user to get their email (for fallback)
         let userEmail = '';
+
+        // Match by ID is the primary way
+        const searchConditions = [{ userId: req.user.id }];
+
+        // Get email for fallback (matching even if userId is missing or wrong)
         if (req.user.role === 'admin') {
             const admin = await Admin.findByPk(req.user.id);
-            userEmail = admin?.email;
+            if (admin) userEmail = admin.email;
         } else {
             const user = await User.findByPk(req.user.id);
-            userEmail = user?.email;
+            if (user) userEmail = user.email;
+        }
+
+        if (userEmail) {
+            searchConditions.push({ customer_email: userEmail });
         }
 
         const bookings = await Booking.findAll({
             where: {
-                [Op.or]: [
-                    { userId: req.user.id },
-                    { customer_email: userEmail }
-                ]
+                [Op.or]: searchConditions
             },
-            include: [{ model: Car, attributes: ['brand', 'model', 'image', 'images'] }],
+            include: [{
+                model: Car,
+                attributes: ['brand', 'model', 'images']
+            }],
             order: [['createdAt', 'DESC']]
         });
+
         res.json(bookings);
     } catch (error) {
-        console.error(error);
+        console.error('FETCH MY BOOKINGS ERROR:', error);
         res.status(500).json({ message: 'Error fetching personal bookings' });
     }
 };
